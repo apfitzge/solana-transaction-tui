@@ -8,13 +8,13 @@ use ratatui::{
 };
 
 pub struct ByteBlock<'a> {
-    byte_sections: &'a [&'a [u8]],
+    byte_sections: &'a [Vec<u8>],
     byte_section_colors: &'a [Color],
     block: Option<Block<'a>>,
 }
 
 impl<'a> ByteBlock<'a> {
-    pub fn new(byte_sections: &'a [&'a [u8]], byte_section_colors: &'a [Color]) -> Self {
+    pub fn new(byte_sections: &'a [Vec<u8>], byte_section_colors: &'a [Color]) -> Self {
         Self {
             byte_sections,
             byte_section_colors,

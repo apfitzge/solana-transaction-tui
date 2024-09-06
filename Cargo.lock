@@ -3879,9 +3879,11 @@ dependencies = [
 name = "solana-transaction-tui"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "ratatui",
  "solana-client",
  "solana-sdk",
+ "solana-transaction-status",
  "tui-input",
 ]
 
