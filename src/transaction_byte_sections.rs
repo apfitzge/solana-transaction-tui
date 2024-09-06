@@ -10,7 +10,7 @@ use {
 };
 
 pub struct TransactionByteSection {
-    pub label: String,
+    pub label: Option<String>,
     pub bytes: Vec<u8>,
     pub color: Color,
 }
@@ -46,14 +46,14 @@ fn add_signature_sections(
     offset: &mut usize,
 ) {
     sections.push(TransactionByteSection {
-        label: "Signature Count".to_owned(),
+        label: Some("Signature Count".to_owned()),
         bytes: get_bytes(bytes, offset, 1),
         color: COLOR_SET.with(|color_set| color_set.signature_count_color),
     });
 
     for (index, _signature) in transaction.signatures.iter().enumerate() {
         sections.push(TransactionByteSection {
-            label: format!("Signature ({index})"),
+            label: Some(format!("Signature ({index})")),
             bytes: get_bytes(bytes, offset, core::mem::size_of::<Signature>()),
             color: COLOR_SET.with(|color_set| color_set.static_account_key_colors[index]),
         })
@@ -70,24 +70,24 @@ fn add_message_header_sections(
         TransactionVersion::Legacy(_) => {}
         TransactionVersion::Number(_) => {
             sections.push(TransactionByteSection {
-                label: "Version Byte".to_owned(),
+                label: Some("Version Byte".to_owned()),
                 bytes: get_bytes(bytes, offset, 1),
                 color: COLOR_SET.with(|color_set| color_set.version_byte_color),
             });
         }
     }
     sections.push(TransactionByteSection {
-        label: "num_required_signatures".to_owned(),
+        label: Some("num_required_signatures".to_owned()),
         bytes: get_bytes(bytes, offset, 1),
         color: COLOR_SET.with(|color_set| color_set.num_required_signatures_color),
     });
     sections.push(TransactionByteSection {
-        label: "num_readonly_signed_accounts".to_owned(),
+        label: Some("num_readonly_signed_accounts".to_owned()),
         bytes: get_bytes(bytes, offset, 1),
         color: COLOR_SET.with(|color_set| color_set.num_readonly_signed_accounts_color),
     });
     sections.push(TransactionByteSection {
-        label: "num_readonly_unsigned_accounts".to_owned(),
+        label: Some("num_readonly_unsigned_accounts".to_owned()),
         bytes: get_bytes(bytes, offset, 1),
         color: COLOR_SET.with(|color_set| color_set.num_readonly_unsigned_accounts_color),
     });
@@ -100,14 +100,14 @@ fn add_static_account_keys_sections(
     offset: &mut usize,
 ) {
     sections.push(TransactionByteSection {
-        label: "Static Account Keys Count".to_owned(),
+        label: Some("Static Account Keys Count".to_owned()),
         bytes: get_bytes(bytes, offset, 1),
         color: Color::Yellow,
     });
 
     for (index, _account_key) in transaction.message.static_account_keys().iter().enumerate() {
         sections.push(TransactionByteSection {
-            label: format!("Static Account Key ({index})"),
+            label: Some(format!("Static Account Key ({index})")),
             bytes: get_bytes(bytes, offset, core::mem::size_of::<Pubkey>()),
             color: COLOR_SET.with(|color_set| color_set.static_account_key_colors[index]),
         });
@@ -122,7 +122,7 @@ fn add_recent_blockhash_section(
 ) {
     let recent_blockhash_bytes = get_bytes(bytes, offset, core::mem::size_of::<Hash>());
     sections.push(TransactionByteSection {
-        label: "Recent Blockhash".to_owned(),
+        label: Some("Recent Blockhash".to_owned()),
         bytes: recent_blockhash_bytes,
         color: COLOR_SET.with(|color_set| color_set.recent_blockhash_color),
     });
@@ -139,7 +139,7 @@ fn add_instructions_sections(
             .unwrap() as usize;
     let num_instructions_count_bytes = get_bytes(bytes, offset, num_instructions_count_bytes);
     sections.push(TransactionByteSection {
-        label: "Number of Instructions".to_owned(),
+        label: Some("Number of Instructions".to_owned()),
         bytes: num_instructions_count_bytes,
         color: COLOR_SET.with(|color_set| color_set.num_instructions_color),
     });
@@ -147,7 +147,7 @@ fn add_instructions_sections(
     for instruction in transaction.message.instructions() {
         let program_id_index = instruction.program_id_index as usize;
         sections.push(TransactionByteSection {
-            label: "Program ID Index".to_owned(),
+            label: None, // color corresponds to the program id
             bytes: get_bytes(bytes, offset, 1),
             color: COLOR_SET.with(|color_set| {
                 color_set
@@ -163,13 +163,13 @@ fn add_instructions_sections(
                 as usize;
         let num_accounts_bytes = get_bytes(bytes, offset, num_accounts_bytes);
         sections.push(TransactionByteSection {
-            label: "Instruction Number of Accounts".to_owned(),
+            label: Some("Instruction Number of Accounts".to_owned()),
             bytes: num_accounts_bytes,
             color: COLOR_SET.with(|color_set| color_set.instruction_num_accounts_color),
         });
         let accounts_bytes = get_bytes(bytes, offset, instruction.accounts.len());
         sections.push(TransactionByteSection {
-            label: "Instruction Accounts".to_owned(),
+            label: Some("Instruction Accounts".to_owned()),
             bytes: accounts_bytes,
             color: COLOR_SET.with(|color_set| color_set.instruction_accounts_color),
         });
@@ -178,13 +178,13 @@ fn add_instructions_sections(
             bincode::serialized_size(&ShortU16(instruction.data.len() as u16)).unwrap() as usize;
         let data_length_bytes = get_bytes(bytes, offset, data_length_bytes);
         sections.push(TransactionByteSection {
-            label: "Instruction Data Length".to_owned(),
+            label: Some("Instruction Data Length".to_owned()),
             bytes: data_length_bytes,
             color: COLOR_SET.with(|color_set| color_set.instruction_data_length_color),
         });
         let data = get_bytes(bytes, offset, instruction.data.len());
         sections.push(TransactionByteSection {
-            label: "Instruction Data".to_owned(),
+            label: Some("Instruction Data".to_owned()),
             bytes: data,
             color: COLOR_SET.with(|color_set| color_set.instruction_data_color),
         });
@@ -205,7 +205,7 @@ fn add_message_address_table_lookups_sections(
         bincode::serialized_size(&ShortU16(address_table_lookups.len() as u16)).unwrap() as usize;
     let num_address_table_lookups_bytes = get_bytes(bytes, offset, num_address_table_lookups_bytes);
     sections.push(TransactionByteSection {
-        label: "Message Address Table Lookups Count".to_owned(),
+        label: Some("Message Address Table Lookups Count".to_owned()),
         bytes: num_address_table_lookups_bytes,
         color: COLOR_SET.with(|color_set| color_set.atl_count_color),
     });
@@ -214,7 +214,7 @@ fn add_message_address_table_lookups_sections(
         // Address
         let address = get_bytes(bytes, offset, core::mem::size_of::<Pubkey>());
         sections.push(TransactionByteSection {
-            label: "Message Address Table Lookup Address".to_owned(),
+            label: Some("Message Address Table Lookup Address".to_owned()),
             bytes: address,
             color: COLOR_SET.with(|color_set| color_set.atl_address_color),
         });
@@ -223,12 +223,12 @@ fn add_message_address_table_lookups_sections(
         let write_count_bytes = get_bytes(bytes, offset, 1);
         let write_count = write_count_bytes[0] as usize;
         sections.push(TransactionByteSection {
-            label: "Message Address Table Lookup Write Count".to_owned(),
+            label: Some("Message Address Table Lookup Write Count".to_owned()),
             bytes: write_count_bytes,
             color: COLOR_SET.with(|color_set| color_set.atl_write_count_color),
         });
         sections.push(TransactionByteSection {
-            label: "Message Address Table Lookup Write Set".to_owned(),
+            label: Some("Message Address Table Lookup Write Set".to_owned()),
             bytes: get_bytes(bytes, offset, write_count),
             color: COLOR_SET.with(|color_set| color_set.atl_write_set_color),
         });
@@ -237,12 +237,12 @@ fn add_message_address_table_lookups_sections(
         let read_count_bytes = get_bytes(bytes, offset, 1);
         let read_count = read_count_bytes[0] as usize;
         sections.push(TransactionByteSection {
-            label: "Message Address Table Lookup Read Count".to_owned(),
+            label: Some("Message Address Table Lookup Read Count".to_owned()),
             bytes: read_count_bytes,
             color: COLOR_SET.with(|color_set| color_set.atl_read_count_color),
         });
         sections.push(TransactionByteSection {
-            label: "Message Address Table Lookup Read Set".to_owned(),
+            label: Some("Message Address Table Lookup Read Set".to_owned()),
             bytes: get_bytes(bytes, offset, read_count),
             color: COLOR_SET.with(|color_set| color_set.atl_read_set_color),
         });
@@ -262,17 +262,62 @@ fn generate_color_set(n: usize) -> Vec<Color> {
         let r = ((i * step) % 256) as u8;
         let g = ((i * step + 85) % 256) as u8; // Shift green by 85 for variety
         let b = ((i * step + 170) % 256) as u8; // Shift blue by 170 for variety
-        colors.push(Color::Rgb(r, g, b));
+        colors.push((r, g, b));
     }
 
-    shuffle_colors(&mut colors, 4815162342); // Shuffle the colors for variety
-    colors
+    let mut sum_r = 0.0;
+    let mut sum_g = 0.0;
+    let mut sum_b = 0.0;
+    let mut count = 0.0;
+
+    let mut ordered = Vec::with_capacity(colors.len());
+    ordered.push(colors.pop().unwrap());
+    // Update the running sums and count
+    let first_color = ordered[0];
+    sum_r += first_color.0 as f64;
+    sum_g += first_color.1 as f64;
+    sum_b += first_color.2 as f64;
+    count += 1.0;
+
+    // Greedily pick the next color that is farthest from the current average color.
+    while !colors.is_empty() {
+        // Calculate the current average color
+        let avg_color = (sum_r / count, sum_g / count, sum_b / count);
+
+        let mut max_distance = 0.0;
+        let mut max_index = 0;
+        for (index, color) in colors.iter().enumerate() {
+            let distance =
+                euclidean_distance((color.0 as f64, color.1 as f64, color.2 as f64), avg_color);
+            if distance > max_distance {
+                max_distance = distance;
+                max_index = index;
+            }
+        }
+
+        // Add the farthest color to the ordered list
+        let next_color = colors.swap_remove(max_index);
+        ordered.push(next_color);
+
+        // Update running sums and count with the new color
+        sum_r += next_color.0 as f64;
+        sum_g += next_color.1 as f64;
+        sum_b += next_color.2 as f64;
+        count += 1.0;
+    }
+
+    assert!(ordered.len() == n);
+
+    ordered
+        .into_iter()
+        .map(|(r, g, b)| Color::Rgb(r, g, b))
+        .collect()
 }
 
-fn shuffle_colors(colors: &mut Vec<Color>, seed: u64) {
-    use rand::{seq::SliceRandom, SeedableRng};
-    let mut rng = rand::rngs::StdRng::seed_from_u64(seed); // Use a seed for deterministic shuffling
-    colors.shuffle(&mut rng);
+fn euclidean_distance(c1: (f64, f64, f64), c2: (f64, f64, f64)) -> f64 {
+    let (r1, g1, b1) = c1;
+    let (r2, g2, b2) = c2;
+    ((r2 - r1).powi(2) + (g2 - g1).powi(2) + (b2 - b1).powi(2)).sqrt()
 }
 
 struct TransactionColorSet {
@@ -299,26 +344,39 @@ struct TransactionColorSet {
 impl TransactionColorSet {
     fn new() -> Self {
         let color_set = generate_color_set(60);
+        let num_static_account_keys = color_set.len() - 17;
+        let non_account_colors = &color_set[num_static_account_keys..];
 
         Self {
-            signature_count_color: color_set[0],
-            version_byte_color: color_set[1],
-            num_required_signatures_color: color_set[2],
-            num_readonly_signed_accounts_color: color_set[3],
-            num_readonly_unsigned_accounts_color: color_set[4],
-            recent_blockhash_color: color_set[5],
-            num_instructions_color: color_set[6],
-            instruction_num_accounts_color: color_set[7],
-            instruction_accounts_color: color_set[8],
-            instruction_data_length_color: color_set[9],
-            instruction_data_color: color_set[10],
-            atl_count_color: color_set[11],
-            atl_address_color: color_set[12],
-            atl_write_count_color: color_set[13],
-            atl_read_count_color: color_set[14],
-            atl_write_set_color: color_set[15],
-            atl_read_set_color: color_set[16],
-            static_account_key_colors: color_set[17..].to_vec(),
+            signature_count_color: non_account_colors[0],
+            version_byte_color: non_account_colors[1],
+            num_required_signatures_color: non_account_colors[2],
+            num_readonly_signed_accounts_color: non_account_colors[3],
+            num_readonly_unsigned_accounts_color: non_account_colors[4],
+            recent_blockhash_color: non_account_colors[5],
+            num_instructions_color: non_account_colors[6],
+            instruction_num_accounts_color: non_account_colors[7],
+            instruction_accounts_color: non_account_colors[8],
+            instruction_data_length_color: non_account_colors[9],
+            instruction_data_color: non_account_colors[10],
+            atl_count_color: non_account_colors[11],
+            atl_address_color: non_account_colors[12],
+            atl_write_count_color: non_account_colors[13],
+            atl_read_count_color: non_account_colors[14],
+            atl_write_set_color: non_account_colors[15],
+            atl_read_set_color: non_account_colors[16],
+            static_account_key_colors: color_set[..num_static_account_keys].to_vec(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_color_set() {
+        let color_set = generate_color_set(100);
+        assert_eq!(color_set.len(), 100);
     }
 }

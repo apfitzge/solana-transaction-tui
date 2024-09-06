@@ -39,6 +39,7 @@ impl<'a> ByteSectionLegend<'a> {
         let mut unique_lines = self
             .sections
             .iter()
+            .filter(|section| section.label.is_some())
             .map(|section: &TransactionByteSection| &section.label)
             .collect::<HashSet<_>>();
         let num_unique_lines = unique_lines.len();
@@ -46,7 +47,12 @@ impl<'a> ByteSectionLegend<'a> {
             .sections
             .iter()
             .filter(|section| unique_lines.remove(&section.label))
-            .map(|section| Text::styled(&section.label, Style::default().bg(section.color)));
+            .map(|section| {
+                Text::styled(
+                    section.label.as_ref().unwrap(),
+                    Style::default().bg(section.color),
+                )
+            });
         let legend_layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints((0..num_unique_lines).map(|_| Constraint::Length(1)))

@@ -17,6 +17,11 @@ pub type Tui = Terminal<CrosstermBackend<Stdout>>;
 
 /// Initialize the terminal
 pub fn init() -> io::Result<Tui> {
+    std::panic::set_hook(Box::new(move |info| {
+        let _ = restore();
+        eprintln!("{info}");
+    }));
+
     execute!(stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
     Terminal::new(CrosstermBackend::new(stdout()))

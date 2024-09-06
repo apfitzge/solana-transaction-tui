@@ -71,7 +71,7 @@ impl<'a> TransactionByteBlock<'a> {
 
                 // Update the byte index and line index
                 byte_index += 1;
-                if byte_index % bytes_per_line == 0 {
+                if byte_index % bytes_per_line == 0 && byte_index < len_bytes {
                     line_index += 1;
                     current_line_layout = line_layout.split(lines[line_index]);
                 }
