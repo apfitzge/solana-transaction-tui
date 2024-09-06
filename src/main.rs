@@ -1,4 +1,5 @@
 use {
+    byte_section_legend::ByteSectionLegend,
     ratatui::{
         crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
         layout::{Constraint, Direction, Layout},
@@ -16,6 +17,7 @@ use {
     tui_input::{backend::crossterm::EventHandler, Input},
 };
 
+mod byte_section_legend;
 mod transaction_byte_block;
 mod transaction_byte_sections;
 mod tui;
@@ -99,7 +101,7 @@ impl TransactionApp {
             .padding(Padding::uniform(1))
             .style(Style::default())
             .title(match self.signature {
-                Some(signature) => format!(" - {}", signature),
+                Some(signature) => format!("{}", signature),
                 None => "".to_string(),
             });
 
@@ -107,32 +109,14 @@ impl TransactionApp {
             TransactionByteBlock::new(&self.transaction_byte_sections).block(bytes_block);
         frame.render_widget(&byte_block, middle_block_chunks[0]);
 
-        // For each color, label add a colored text box
-        let legend_lines = self
-            .transaction_byte_sections
-            .iter()
-            .map(|section| Text::styled(section.label, Style::default().bg(section.color)))
-            .collect::<Vec<_>>();
-
         let legend_block = Block::default()
             .borders(Borders::ALL)
             .padding(Padding::uniform(1))
             .title("Legend")
             .style(Style::default());
-
-        // Render the legend lines in vertical layout with equal constraints
-        let legend_layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                (0..self.transaction_byte_sections.len())
-                    .map(|_| Constraint::Length(3))
-                    .collect::<Vec<_>>(),
-            )
-            .split(legend_block.inner(middle_block_chunks[1]));
-        frame.render_widget(legend_block, middle_block_chunks[1]);
-        for (gauge, layout) in legend_lines.iter().zip(legend_layout.iter()) {
-            frame.render_widget(gauge, *layout);
-        }
+        let byte_section_legend =
+            ByteSectionLegend::new(&self.transaction_byte_sections).block(legend_block);
+        frame.render_widget(&byte_section_legend, middle_block_chunks[1]);
 
         let footer_block = Block::default()
             .borders(Borders::ALL)
