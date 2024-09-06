@@ -63,7 +63,7 @@ impl<'a> TransactionByteBlock<'a> {
         let mut line_index = 0;
 
         let mut current_line_layout = line_layout.split(lines[line_index]);
-        for section in self.sections.into_iter() {
+        for section in self.sections.iter() {
             for byte in section.bytes.iter() {
                 let byte_text =
                     Text::styled(format!("{:02x} ", byte), Style::default().bg(section.color));

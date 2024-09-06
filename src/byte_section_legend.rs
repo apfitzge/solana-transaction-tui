@@ -44,7 +44,7 @@ impl<'a> ByteSectionLegend<'a> {
             .constraints((0..self.sections.len()).map(|_| Constraint::Length(1)))
             .split(area);
 
-        for (line, layout) in legend_lines.zip(legend_layout.into_iter()) {
+        for (line, layout) in legend_lines.zip(legend_layout.iter()) {
             line.render(*layout, buf);
         }
     }

@@ -2,7 +2,6 @@ use {
     ratatui::style::Color,
     solana_sdk::{
         hash::Hash,
-        pubkey::Pubkey,
         short_vec::ShortVec,
         signature::Signature,
         transaction::{TransactionVersion, VersionedTransaction},
@@ -78,9 +77,8 @@ fn add_static_account_keys_sections(
     sections: &mut Vec<TransactionByteSection>,
     offset: &mut usize,
 ) {
-    let num_static_account_keys = transaction.message.static_account_keys().len();
     let num_static_account_keys_bytes =
-        1 + num_static_account_keys * core::mem::size_of::<Pubkey>();
+        1 + core::mem::size_of_val(transaction.message.static_account_keys());
     let static_account_keys_bytes = get_bytes(bytes, offset, num_static_account_keys_bytes);
 
     sections.push(TransactionByteSection {

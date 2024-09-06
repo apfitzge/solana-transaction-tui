@@ -94,7 +94,7 @@ impl TransactionApp {
             .borders(Borders::ALL)
             .style(Style::default());
         let title = Paragraph::new(Text::styled(
-            format!("Transaction Layout App"),
+            "Transaction Layout App",
             Style::default().fg(Color::Green),
         ))
         .block(title_block);
@@ -229,7 +229,7 @@ impl TransactionApp {
         self.transaction_byte_sections.clear();
 
         let text = self.input.value();
-        let maybe_signature = Signature::from_str(&text);
+        let maybe_signature = Signature::from_str(text);
         self.input.reset(); // Clear the input field
 
         let Ok(signature) = maybe_signature else {
