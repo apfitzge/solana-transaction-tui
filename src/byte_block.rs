@@ -41,7 +41,6 @@ impl<'a> ByteBlock<'a> {
 
         // Go byte by byte and render them.
         // Make sure to only render as many bytes as can fit in the area.
-
         let bytes_per_line = (area.width / 3) as usize;
         let num_lines = len_bytes / bytes_per_line
             + if len_bytes % bytes_per_line == 0 {
