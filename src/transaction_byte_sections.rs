@@ -1,10 +1,12 @@
-use ratatui::style::Color;
-use solana_sdk::{
-    hash::Hash,
-    pubkey::Pubkey,
-    short_vec::ShortVec,
-    signature::Signature,
-    transaction::{TransactionVersion, VersionedTransaction},
+use {
+    ratatui::style::Color,
+    solana_sdk::{
+        hash::Hash,
+        pubkey::Pubkey,
+        short_vec::ShortVec,
+        signature::Signature,
+        transaction::{TransactionVersion, VersionedTransaction},
+    },
 };
 
 pub fn get_transaction_byte_sections(

@@ -1,18 +1,19 @@
-use std::{io, str::FromStr};
-
-use byte_block::ByteBlock;
-use ratatui::{
-    crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
-    text::Text,
-    widgets::{Block, Borders, Padding, Paragraph},
-    Frame,
+use {
+    byte_block::ByteBlock,
+    ratatui::{
+        crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
+        layout::{Constraint, Direction, Layout},
+        style::{Color, Style},
+        text::Text,
+        widgets::{Block, Borders, Padding, Paragraph},
+        Frame,
+    },
+    solana_client::rpc_client::RpcClient,
+    solana_sdk::signature::Signature,
+    solana_transaction_status::UiTransactionEncoding,
+    std::{io, str::FromStr},
+    tui_input::{backend::crossterm::EventHandler, Input},
 };
-use solana_client::rpc_client::RpcClient;
-use solana_sdk::signature::Signature;
-use solana_transaction_status::UiTransactionEncoding;
-use tui_input::{backend::crossterm::EventHandler, Input};
 
 mod byte_block;
 mod transaction_byte_sections;
