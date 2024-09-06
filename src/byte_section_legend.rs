@@ -8,6 +8,7 @@ use {
         text::Text,
         widgets::{Block, Widget},
     },
+    std::collections::HashSet,
 };
 
 pub struct ByteSectionLegend<'a> {
@@ -35,13 +36,20 @@ impl<'a> ByteSectionLegend<'a> {
     }
 
     fn render_inner(&self, area: Rect, buf: &mut Buffer) {
+        let mut unique_lines = self
+            .sections
+            .iter()
+            .map(|section: &TransactionByteSection| &section.label)
+            .collect::<HashSet<_>>();
+        let num_unique_lines = unique_lines.len();
         let legend_lines = self
             .sections
             .iter()
-            .map(|section| Text::styled(section.label, Style::default().bg(section.color)));
+            .filter(|section| unique_lines.remove(&section.label))
+            .map(|section| Text::styled(&section.label, Style::default().bg(section.color)));
         let legend_layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints((0..self.sections.len()).map(|_| Constraint::Length(1)))
+            .constraints((0..num_unique_lines).map(|_| Constraint::Length(1)))
             .split(area);
 
         for (line, layout) in legend_lines.zip(legend_layout.iter()) {
