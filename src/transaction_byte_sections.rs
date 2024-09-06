@@ -63,8 +63,7 @@ fn add_message_header_sections(
         TransactionVersion::Legacy(_) => 0,
         TransactionVersion::Number(_) => 1,
     };
-    let header_bytes = bytes[*offset..*offset + header_length].to_vec();
-    *offset += header_length;
+    let header_bytes = get_bytes(bytes, offset, header_length);
 
     sections.push(TransactionByteSection {
         label: "Message Header",
@@ -82,9 +81,7 @@ fn add_static_account_keys_sections(
     let num_static_account_keys = transaction.message.static_account_keys().len();
     let num_static_account_keys_bytes =
         1 + num_static_account_keys * core::mem::size_of::<Pubkey>();
-    let static_account_keys_bytes =
-        bytes[*offset..*offset + num_static_account_keys_bytes].to_vec();
-    *offset += num_static_account_keys_bytes;
+    let static_account_keys_bytes = get_bytes(bytes, offset, num_static_account_keys_bytes);
 
     sections.push(TransactionByteSection {
         label: "Static Account Keys",
@@ -99,10 +96,7 @@ fn add_recent_blockhash_section(
     sections: &mut Vec<TransactionByteSection>,
     offset: &mut usize,
 ) {
-    let num_recent_blockhash_bytes = core::mem::size_of::<Hash>();
-    let recent_blockhash_bytes = bytes[*offset..*offset + num_recent_blockhash_bytes].to_vec();
-    *offset += num_recent_blockhash_bytes;
-
+    let recent_blockhash_bytes = get_bytes(bytes, offset, core::mem::size_of::<Hash>());
     sections.push(TransactionByteSection {
         label: "Recent Blockhash",
         bytes: recent_blockhash_bytes,
@@ -121,8 +115,7 @@ fn add_instructions_sections(
     else {
         return;
     };
-    let instruction_bytes = bytes[*offset..*offset + num_instruction_bytes as usize].to_vec();
-    *offset += num_instruction_bytes as usize;
+    let instruction_bytes = get_bytes(bytes, offset, num_instruction_bytes as usize);
 
     sections.push(TransactionByteSection {
         label: "Instructions",
@@ -146,17 +139,17 @@ fn add_message_address_table_lookups_sections(
         return;
     };
     let address_table_lookups_bytes =
-        bytes[*offset..*offset + num_address_table_lookups_bytes as usize].to_vec();
-
-    // Still want to update offset for consistency
-    #[allow(unused_assignments)]
-    {
-        *offset += num_address_table_lookups_bytes as usize;
-    }
+        get_bytes(bytes, offset, num_address_table_lookups_bytes as usize);
 
     sections.push(TransactionByteSection {
         label: "Message Address Table Lookups",
         bytes: address_table_lookups_bytes,
         color: Color::Red,
     });
+}
+
+fn get_bytes(bytes: &[u8], offset: &mut usize, num_bytes: usize) -> Vec<u8> {
+    let result = bytes[*offset..*offset + num_bytes].to_vec();
+    *offset += num_bytes;
+    result
 }
