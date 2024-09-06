@@ -29,14 +29,22 @@ fn main() -> io::Result<()> {
         input: Input::new("".to_string()),
         signature: None,
         transaction_byte_sections: vec![],
+        mode: Mode::SignatureEntry,
     }
     .run(&mut terminal);
     tui::restore()?;
     app_result
 }
 
+enum Mode {
+    SignatureEntry,
+}
+
 pub struct TransactionApp {
     exit: bool,
+    mode: Mode,
+
+    // Useful for Mode::SignatureEntry
     input: Input,
     signature: Option<Signature>,
     transaction_byte_sections: Vec<TransactionByteSection>,
@@ -141,6 +149,12 @@ impl TransactionApp {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) {
+        match self.mode {
+            Mode::SignatureEntry => self.signature_entry_handle_key_event(key_event),
+        }
+    }
+
+    fn signature_entry_handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Esc => self.exit(),
             KeyCode::Enter => self.on_signature_entry(),
@@ -160,6 +174,7 @@ impl TransactionApp {
 
         let text = self.input.value();
         self.signature = Signature::from_str(&text).ok();
+        self.input.reset(); // Clear the input field
 
         if let Some(signature) = self.signature.as_ref() {
             // Create client and get transaction details
