@@ -9,12 +9,19 @@ use {
     },
 };
 
+pub struct TransactionByteSection {
+    pub label: &'static str,
+    pub bytes: Vec<u8>,
+    pub color: Color,
+}
+
 pub fn get_transaction_byte_sections(
     transaction: &VersionedTransaction,
-    byte_labels: &mut Vec<&'static str>,
-    byte_sections: &mut Vec<Vec<u8>>,
-    byte_section_colors: &mut Vec<Color>,
+    sections: &mut Vec<TransactionByteSection>,
 ) {
+    // Make sure the sections are empty
+    sections.clear();
+
     // Get the transaction raw bytes
     let bytes = bincode::serialize(&transaction).unwrap();
 
@@ -28,9 +35,11 @@ pub fn get_transaction_byte_sections(
         let signature_bytes = bytes[offset..offset + num_signature_bytes].to_vec();
         offset += num_signature_bytes;
 
-        byte_labels.push("Signatures");
-        byte_sections.push(signature_bytes);
-        byte_section_colors.push(Color::LightGreen);
+        sections.push(TransactionByteSection {
+            label: "Signatures",
+            bytes: signature_bytes,
+            color: Color::LightGreen,
+        });
     }
 
     // Message header
@@ -42,9 +51,11 @@ pub fn get_transaction_byte_sections(
         let header_bytes = bytes[offset..offset + header_length].to_vec();
         offset += header_length;
 
-        byte_labels.push("Message Header");
-        byte_sections.push(header_bytes);
-        byte_section_colors.push(Color::Blue);
+        sections.push(TransactionByteSection {
+            label: "Message Header",
+            bytes: header_bytes,
+            color: Color::Blue,
+        });
     }
 
     // Static Account Keys
@@ -56,9 +67,11 @@ pub fn get_transaction_byte_sections(
             bytes[offset..offset + num_static_account_keys_bytes].to_vec();
         offset += num_static_account_keys_bytes;
 
-        byte_labels.push("Static Account Keys");
-        byte_sections.push(static_account_keys_bytes);
-        byte_section_colors.push(Color::Yellow);
+        sections.push(TransactionByteSection {
+            label: "Static Account Keys",
+            bytes: static_account_keys_bytes,
+            color: Color::Yellow,
+        });
     }
 
     // Recent Blockhash
@@ -67,9 +80,11 @@ pub fn get_transaction_byte_sections(
         let recent_blockhash_bytes = bytes[offset..offset + num_recent_blockhash_bytes].to_vec();
         offset += num_recent_blockhash_bytes;
 
-        byte_labels.push("Recent Blockhash");
-        byte_sections.push(recent_blockhash_bytes);
-        byte_section_colors.push(Color::Magenta);
+        sections.push(TransactionByteSection {
+            label: "Recent Blockhash",
+            bytes: recent_blockhash_bytes,
+            color: Color::Magenta,
+        });
     }
 
     // Instructions
@@ -82,9 +97,11 @@ pub fn get_transaction_byte_sections(
         let instruction_bytes = bytes[offset..offset + num_instruction_bytes as usize].to_vec();
         offset += num_instruction_bytes as usize;
 
-        byte_labels.push("Instructions");
-        byte_sections.push(instruction_bytes);
-        byte_section_colors.push(Color::Cyan);
+        sections.push(TransactionByteSection {
+            label: "Instructions",
+            bytes: instruction_bytes,
+            color: Color::Cyan,
+        });
     }
 
     // Message Address Table Lookups
@@ -106,8 +123,10 @@ pub fn get_transaction_byte_sections(
             offset += num_address_table_lookups_bytes as usize;
         }
 
-        byte_labels.push("Message Address Table Lookups");
-        byte_sections.push(address_table_lookups_bytes);
-        byte_section_colors.push(Color::Red);
+        sections.push(TransactionByteSection {
+            label: "Message Address Table Lookups",
+            bytes: address_table_lookups_bytes,
+            color: Color::Red,
+        });
     }
 }

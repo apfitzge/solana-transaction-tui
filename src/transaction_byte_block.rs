@@ -1,23 +1,24 @@
-use ratatui::{
-    buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
-    prelude::BlockExt,
-    style::{Color, Style},
-    text::Text,
-    widgets::{Block, Widget},
+use {
+    crate::transaction_byte_sections::TransactionByteSection,
+    ratatui::{
+        buffer::Buffer,
+        layout::{Constraint, Direction, Layout, Rect},
+        prelude::BlockExt,
+        style::Style,
+        text::Text,
+        widgets::{Block, Widget},
+    },
 };
 
-pub struct ByteBlock<'a> {
-    byte_sections: &'a [Vec<u8>],
-    byte_section_colors: &'a [Color],
+pub struct TransactionByteBlock<'a> {
+    sections: &'a [TransactionByteSection],
     block: Option<Block<'a>>,
 }
 
-impl<'a> ByteBlock<'a> {
-    pub fn new(byte_sections: &'a [Vec<u8>], byte_section_colors: &'a [Color]) -> Self {
+impl<'a> TransactionByteBlock<'a> {
+    pub fn new(transaction_byte_sections: &'a [TransactionByteSection]) -> Self {
         Self {
-            byte_sections,
-            byte_section_colors,
+            sections: transaction_byte_sections,
             block: None,
         }
     }
@@ -34,7 +35,7 @@ impl<'a> ByteBlock<'a> {
     }
 
     fn render_inner(&self, area: Rect, buf: &mut Buffer) {
-        let len_bytes = self.byte_sections.iter().map(|s| s.len()).sum::<usize>();
+        let len_bytes = self.sections.iter().map(|s| s.bytes.len()).sum::<usize>();
         if len_bytes == 0 {
             return;
         }
@@ -62,16 +63,10 @@ impl<'a> ByteBlock<'a> {
         let mut line_index = 0;
 
         let mut current_line_layout = line_layout.split(lines[line_index]);
-        for (byte_section, section_color) in self
-            .byte_sections
-            .into_iter()
-            .zip(self.byte_section_colors.into_iter())
-        {
-            for byte in byte_section.iter() {
-                let byte_text = Text::styled(
-                    format!("{:02x} ", byte),
-                    Style::default().bg(*section_color),
-                );
+        for section in self.sections.into_iter() {
+            for byte in section.bytes.iter() {
+                let byte_text =
+                    Text::styled(format!("{:02x} ", byte), Style::default().bg(section.color));
                 byte_text.render(current_line_layout[byte_index % bytes_per_line], buf);
 
                 // Update the byte index and line index
@@ -85,7 +80,7 @@ impl<'a> ByteBlock<'a> {
     }
 }
 
-impl<'a> Widget for &ByteBlock<'a> {
+impl<'a> Widget for &TransactionByteBlock<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.block.render(area, buf);
         let inner = self.block.inner_if_some(area);

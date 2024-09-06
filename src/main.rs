@@ -1,5 +1,4 @@
 use {
-    byte_block::ByteBlock,
     ratatui::{
         crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
         layout::{Constraint, Direction, Layout},
@@ -8,14 +7,16 @@ use {
         widgets::{Block, Borders, Padding, Paragraph},
         Frame,
     },
-    solana_client::rpc_client::RpcClient,
-    solana_sdk::signature::Signature,
+    solana_client::{rpc_client::RpcClient, rpc_config::RpcTransactionConfig},
+    solana_sdk::{commitment_config::CommitmentConfig, signature::Signature},
     solana_transaction_status::UiTransactionEncoding,
     std::{io, str::FromStr},
+    transaction_byte_block::TransactionByteBlock,
+    transaction_byte_sections::{get_transaction_byte_sections, TransactionByteSection},
     tui_input::{backend::crossterm::EventHandler, Input},
 };
 
-mod byte_block;
+mod transaction_byte_block;
 mod transaction_byte_sections;
 mod tui;
 
@@ -25,9 +26,7 @@ fn main() -> io::Result<()> {
         exit: false,
         input: Input::new("".to_string()),
         signature: None,
-        byte_labels: vec![],
-        byte_sections: vec![],
-        byte_section_colors: vec![],
+        transaction_byte_sections: vec![],
     }
     .run(&mut terminal);
     tui::restore()?;
@@ -38,10 +37,7 @@ pub struct TransactionApp {
     exit: bool,
     input: Input,
     signature: Option<Signature>,
-
-    byte_labels: Vec<&'static str>,
-    byte_sections: Vec<Vec<u8>>,
-    byte_section_colors: Vec<Color>,
+    transaction_byte_sections: Vec<TransactionByteSection>,
 }
 
 impl TransactionApp {
@@ -108,15 +104,14 @@ impl TransactionApp {
             });
 
         let byte_block =
-            ByteBlock::new(&self.byte_sections, &self.byte_section_colors).block(bytes_block);
+            TransactionByteBlock::new(&self.transaction_byte_sections).block(bytes_block);
         frame.render_widget(&byte_block, middle_block_chunks[0]);
 
         // For each color, label add a colored text box
         let legend_lines = self
-            .byte_labels
+            .transaction_byte_sections
             .iter()
-            .zip(self.byte_section_colors.iter())
-            .map(|(label, color)| Text::styled(*label, Style::default().bg(*color)))
+            .map(|section| Text::styled(section.label, Style::default().bg(section.color)))
             .collect::<Vec<_>>();
 
         let legend_block = Block::default()
@@ -129,7 +124,7 @@ impl TransactionApp {
         let legend_layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
-                (0..self.byte_labels.len())
+                (0..self.transaction_byte_sections.len())
                     .map(|_| Constraint::Length(3))
                     .collect::<Vec<_>>(),
             )
@@ -177,9 +172,7 @@ impl TransactionApp {
 
     fn on_signature_entry(&mut self) {
         self.signature = None;
-        self.byte_labels.clear();
-        self.byte_sections.clear();
-        self.byte_section_colors.clear();
+        self.transaction_byte_sections.clear();
 
         let text = self.input.value();
         self.signature = Signature::from_str(&text).ok();
@@ -187,19 +180,18 @@ impl TransactionApp {
         if let Some(signature) = self.signature.as_ref() {
             // Create client and get transaction details
             let client = RpcClient::new("https://api.mainnet-beta.solana.com".to_string());
-            let Ok(transaction) = client.get_transaction(signature, UiTransactionEncoding::Binary)
-            else {
+            let config = RpcTransactionConfig {
+                encoding: Some(UiTransactionEncoding::Binary),
+                commitment: Some(CommitmentConfig::confirmed()),
+                max_supported_transaction_version: Some(0),
+            };
+            let Ok(transaction) = client.get_transaction_with_config(&signature, config) else {
                 return;
             };
 
             if let Some(transaction) = transaction.transaction.transaction.decode() {
-                transaction_byte_sections::get_transaction_byte_sections(
-                    &transaction,
-                    &mut self.byte_labels,
-                    &mut self.byte_sections,
-                    &mut self.byte_section_colors,
-                );
-            };
+                get_transaction_byte_sections(&transaction, &mut self.transaction_byte_sections);
+            }
         }
     }
 }
