@@ -1,5 +1,6 @@
 use {
     byte_section_legend::ByteSectionLegend,
+    menu::AppMenuItem,
     ratatui::{
         crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
         layout::{Constraint, Direction, Layout},
@@ -15,9 +16,11 @@ use {
     transaction_byte_block::TransactionByteBlock,
     transaction_byte_sections::{get_transaction_byte_sections, TransactionByteSection},
     tui_input::{backend::crossterm::EventHandler, Input},
+    tui_menu::{Menu, MenuEvent, MenuState},
 };
 
 mod byte_section_legend;
+mod menu;
 mod transaction_byte_block;
 mod transaction_byte_sections;
 mod tui;
@@ -26,10 +29,14 @@ fn main() -> io::Result<()> {
     let mut terminal = tui::init()?;
     let app_result = TransactionApp {
         exit: false,
+        mode: Mode::SignatureEntry,
+
         input: Input::new("".to_string()),
         signature: None,
         transaction_byte_sections: vec![],
-        mode: Mode::SignatureEntry,
+
+        menu: menu::menu(),
+        endpoint: "https://api.mainnet-beta.solana.com",
     }
     .run(&mut terminal);
     tui::restore()?;
@@ -38,6 +45,7 @@ fn main() -> io::Result<()> {
 
 enum Mode {
     SignatureEntry,
+    MenuSelection,
 }
 
 pub struct TransactionApp {
@@ -48,6 +56,10 @@ pub struct TransactionApp {
     input: Input,
     signature: Option<Signature>,
     transaction_byte_sections: Vec<TransactionByteSection>,
+
+    // Useful for Mode::MenuSelection
+    menu: MenuState<AppMenuItem>,
+    endpoint: &'static str,
 }
 
 impl TransactionApp {
@@ -59,7 +71,7 @@ impl TransactionApp {
         Ok(())
     }
 
-    fn render_frame(&self, frame: &mut Frame) {
+    fn render_frame(&mut self, frame: &mut Frame) {
         // Split the frame into sections.
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -135,6 +147,9 @@ impl TransactionApp {
         ))
         .block(footer_block);
         frame.render_widget(footer, chunks[3]);
+
+        // Render the menu
+        frame.render_stateful_widget(Menu::new(), chunks[0], &mut self.menu)
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
@@ -151,6 +166,7 @@ impl TransactionApp {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match self.mode {
             Mode::SignatureEntry => self.signature_entry_handle_key_event(key_event),
+            Mode::MenuSelection => self.menu_selection_handle_key_event(key_event),
         }
     }
 
@@ -158,8 +174,39 @@ impl TransactionApp {
         match key_event.code {
             KeyCode::Esc => self.exit(),
             KeyCode::Enter => self.on_signature_entry(),
+            KeyCode::Up => {
+                self.mode = Mode::MenuSelection;
+                self.menu.activate()
+            }
             _ => {
                 self.input.handle_event(&Event::Key(key_event));
+            }
+        }
+    }
+
+    fn menu_selection_handle_key_event(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Esc => {
+                self.mode = Mode::SignatureEntry;
+                self.menu.reset();
+            }
+            KeyCode::Enter => self.menu.select(),
+            KeyCode::Up => self.menu.up(),
+            KeyCode::Down => self.menu.down(),
+            KeyCode::Left => self.menu.left(),
+            KeyCode::Right => self.menu.right(),
+            _ => {}
+        }
+
+        for event in self.menu.drain_events() {
+            match event {
+                MenuEvent::Selected(item) => match item {
+                    AppMenuItem::Endpoint(endpoint) => {
+                        self.endpoint = endpoint;
+                        self.mode = Mode::SignatureEntry;
+                        self.menu.reset();
+                    }
+                },
             }
         }
     }
@@ -178,7 +225,7 @@ impl TransactionApp {
 
         if let Some(signature) = self.signature.as_ref() {
             // Create client and get transaction details
-            let client = RpcClient::new("https://api.mainnet-beta.solana.com".to_string());
+            let client = RpcClient::new(self.endpoint);
             let config = RpcTransactionConfig {
                 encoding: Some(UiTransactionEncoding::Binary),
                 commitment: Some(CommitmentConfig::confirmed()),

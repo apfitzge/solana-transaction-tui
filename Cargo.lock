@@ -3885,6 +3885,7 @@ dependencies = [
  "solana-sdk",
  "solana-transaction-status",
  "tui-input",
+ "tui-menu",
 ]
 
 [[package]]
@@ -4631,6 +4632,15 @@ checksum = "bd137780d743c103a391e06fe952487f914b299a4fe2c3626677f6a6339a7c6b"
 dependencies = [
  "ratatui",
  "unicode-width",
+]
+
+[[package]]
+name = "tui-menu"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6891512c027359f83904cf84fc7071303167e3e9718e454c3bd4d69eae62022"
+dependencies = [
+ "ratatui",
 ]
 
 [[package]]
