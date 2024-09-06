@@ -32,7 +32,7 @@ fn main() -> io::Result<()> {
         mode: Mode::SignatureEntry,
 
         input: Input::new("".to_string()),
-        signature: None,
+        signature: SignatureStatus::None,
         transaction_byte_sections: vec![],
 
         menu: menu::menu(),
@@ -48,13 +48,20 @@ enum Mode {
     MenuSelection,
 }
 
+enum SignatureStatus {
+    None,
+    Invalid,
+    NotFound(Signature),
+    Found(Signature),
+}
+
 pub struct TransactionApp {
     exit: bool,
     mode: Mode,
 
     // Useful for Mode::SignatureEntry
     input: Input,
-    signature: Option<Signature>,
+    signature: SignatureStatus,
     transaction_byte_sections: Vec<TransactionByteSection>,
 
     // Useful for Mode::MenuSelection
@@ -121,8 +128,10 @@ impl TransactionApp {
             .padding(Padding::uniform(1))
             .style(Style::default())
             .title(match self.signature {
-                Some(signature) => format!("{}", signature),
-                None => "".to_string(),
+                SignatureStatus::None => "".to_string(),
+                SignatureStatus::Invalid => "Invalid Signature".to_string(),
+                SignatureStatus::NotFound(signature) => format!("{signature} not found"),
+                SignatureStatus::Found(signature) => format!("{}", signature),
             });
 
         let byte_block =
@@ -216,28 +225,33 @@ impl TransactionApp {
     }
 
     fn on_signature_entry(&mut self) {
-        self.signature = None;
+        self.signature = SignatureStatus::None;
         self.transaction_byte_sections.clear();
 
         let text = self.input.value();
-        self.signature = Signature::from_str(&text).ok();
+        let maybe_signature = Signature::from_str(&text);
         self.input.reset(); // Clear the input field
 
-        if let Some(signature) = self.signature.as_ref() {
-            // Create client and get transaction details
-            let client = RpcClient::new(self.endpoint);
-            let config = RpcTransactionConfig {
-                encoding: Some(UiTransactionEncoding::Binary),
-                commitment: Some(CommitmentConfig::confirmed()),
-                max_supported_transaction_version: Some(0),
-            };
-            let Ok(transaction) = client.get_transaction_with_config(&signature, config) else {
-                return;
-            };
+        let Ok(signature) = maybe_signature else {
+            self.signature = SignatureStatus::Invalid;
+            return;
+        };
 
-            if let Some(transaction) = transaction.transaction.transaction.decode() {
-                get_transaction_byte_sections(&transaction, &mut self.transaction_byte_sections);
-            }
+        // Create client and get transaction details
+        let client = RpcClient::new(self.endpoint);
+        let config = RpcTransactionConfig {
+            encoding: Some(UiTransactionEncoding::Binary),
+            commitment: Some(CommitmentConfig::confirmed()),
+            max_supported_transaction_version: Some(0),
+        };
+        let Ok(transaction) = client.get_transaction_with_config(&signature, config) else {
+            self.signature = SignatureStatus::NotFound(signature);
+            return;
+        };
+
+        self.signature = SignatureStatus::Found(signature);
+        if let Some(transaction) = transaction.transaction.transaction.decode() {
+            get_transaction_byte_sections(&transaction, &mut self.transaction_byte_sections);
         }
     }
 }
