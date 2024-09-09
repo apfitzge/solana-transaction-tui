@@ -43,7 +43,8 @@ impl<'a> TransactionByteBlock<'a> {
         // Go byte by byte and render them.
         // Make sure to only render as many bytes as can fit in the area.
         let bytes_per_line = (area.width / 3) as usize;
-        let num_lines = len_bytes / bytes_per_line
+        let num_lines = 2
+            + len_bytes / bytes_per_line
             + if len_bytes % bytes_per_line == 0 {
                 0
             } else {
@@ -63,6 +64,22 @@ impl<'a> TransactionByteBlock<'a> {
         let mut line_index = 0;
 
         let mut current_line_layout = line_layout.split(lines[line_index]);
+
+        // Render the header
+        for index in 0..bytes_per_line {
+            let byte_text = Text::styled(format!("{:02} ", index), Style::default());
+            byte_text.render(current_line_layout[index], buf);
+        }
+        // Render a line of ----
+        line_index += 1;
+        current_line_layout = line_layout.split(lines[line_index]);
+        for index in 0..bytes_per_line {
+            let byte_text = Text::styled("---", Style::default());
+            byte_text.render(current_line_layout[index], buf);
+        }
+        line_index += 1;
+        current_line_layout = line_layout.split(lines[line_index]);
+
         for section in self.sections.iter() {
             for byte in section.bytes.iter() {
                 let byte_text =
