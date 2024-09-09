@@ -255,69 +255,71 @@ fn get_bytes(bytes: &[u8], offset: &mut usize, num_bytes: usize) -> Vec<u8> {
     result
 }
 
-fn generate_color_set(n: usize) -> Vec<Color> {
-    let mut colors = Vec::new();
-    let step = 256 / (n).max(1); // Spacing colors evenly in RGB space
-    for i in 0..n {
-        let r = ((i * step) % 256) as u8;
-        let g = ((i * step + 85) % 256) as u8; // Shift green by 85 for variety
-        let b = ((i * step + 170) % 256) as u8; // Shift blue by 170 for variety
-        colors.push((r, g, b));
-    }
+fn generate_color_set() -> &'static [Color] {
+    const COLORS: [Color; 60] = [
+        Color::Rgb(255, 228, 196), // bisque
+        Color::Rgb(47, 79, 79),    // darkslategray
+        Color::Rgb(85, 107, 47),   // darkolivegreen
+        Color::Rgb(107, 142, 35),  // olivedrab
+        Color::Rgb(160, 82, 45),   // sienna
+        Color::Rgb(46, 139, 87),   // seagreen
+        Color::Rgb(128, 0, 0),     // maroon
+        Color::Rgb(25, 25, 112),   // midnightblue
+        Color::Rgb(112, 128, 144), // slategray
+        Color::Rgb(0, 128, 0),     // green
+        Color::Rgb(188, 143, 143), // rosybrown
+        Color::Rgb(102, 51, 153),  // rebeccapurple
+        Color::Rgb(184, 134, 11),  // darkgoldenrod
+        Color::Rgb(0, 139, 139),   // darkcyan
+        Color::Rgb(205, 133, 63),  // peru
+        Color::Rgb(70, 130, 180),  // steelblue
+        Color::Rgb(210, 105, 30),  // chocolate
+        Color::Rgb(143, 188, 143), // darkseagreen
+        Color::Rgb(0, 0, 139),     // darkblue
+        Color::Rgb(50, 205, 50),   // limegreen
+        Color::Rgb(127, 0, 127),   // purple2
+        Color::Rgb(176, 48, 96),   // maroon3
+        Color::Rgb(154, 205, 50),  // yellowgreen
+        Color::Rgb(72, 209, 204),  // mediumturquoise
+        Color::Rgb(153, 50, 204),  // darkorchid
+        Color::Rgb(255, 0, 0),     // red
+        Color::Rgb(255, 165, 0),   // orange
+        Color::Rgb(255, 215, 0),   // gold
+        Color::Rgb(199, 21, 133),  // mediumvioletred
+        Color::Rgb(0, 0, 205),     // mediumblue
+        Color::Rgb(222, 184, 135), // burlywood
+        Color::Rgb(0, 255, 0),     // lime
+        Color::Rgb(0, 250, 154),   // mediumspringgreen
+        Color::Rgb(65, 105, 225),  // royalblue
+        Color::Rgb(220, 20, 60),   // crimson
+        Color::Rgb(0, 255, 255),   // aqua
+        Color::Rgb(0, 191, 255),   // deepskyblue
+        Color::Rgb(147, 112, 219), // mediumpurple
+        Color::Rgb(0, 0, 255),     // blue
+        Color::Rgb(160, 32, 240),  // purple3
+        Color::Rgb(240, 128, 128), // lightcoral
+        Color::Rgb(173, 255, 47),  // greenyellow
+        Color::Rgb(255, 99, 71),   // tomato
+        Color::Rgb(218, 112, 214), // orchid
+        Color::Rgb(216, 191, 216), // thistle
+        Color::Rgb(255, 0, 255),   // fuchsia
+        Color::Rgb(219, 112, 147), // palevioletred
+        Color::Rgb(240, 230, 140), // khaki
+        Color::Rgb(255, 255, 84),  // laserlemon
+        Color::Rgb(100, 149, 237), // cornflower
+        Color::Rgb(221, 160, 221), // plum
+        Color::Rgb(144, 238, 144), // lightgreen
+        Color::Rgb(135, 206, 235), // skyblue
+        Color::Rgb(255, 20, 147),  // deeppink
+        Color::Rgb(255, 160, 122), // lightsalmon
+        Color::Rgb(175, 238, 238), // paleturquoise
+        Color::Rgb(127, 255, 212), // aquamarine
+        Color::Rgb(255, 105, 180), // hotpink
+        Color::Rgb(169, 169, 169), // darkgray
+        Color::Rgb(255, 182, 193), // lightpink
+    ];
 
-    let mut sum_r = 0.0;
-    let mut sum_g = 0.0;
-    let mut sum_b = 0.0;
-    let mut count = 0.0;
-
-    let mut ordered = Vec::with_capacity(colors.len());
-    ordered.push(colors.pop().unwrap());
-    // Update the running sums and count
-    let first_color = ordered[0];
-    sum_r += first_color.0 as f64;
-    sum_g += first_color.1 as f64;
-    sum_b += first_color.2 as f64;
-    count += 1.0;
-
-    // Greedily pick the next color that is farthest from the current average color.
-    while !colors.is_empty() {
-        // Calculate the current average color
-        let avg_color = (sum_r / count, sum_g / count, sum_b / count);
-
-        let mut max_distance = 0.0;
-        let mut max_index = 0;
-        for (index, color) in colors.iter().enumerate() {
-            let distance =
-                euclidean_distance((color.0 as f64, color.1 as f64, color.2 as f64), avg_color);
-            if distance > max_distance {
-                max_distance = distance;
-                max_index = index;
-            }
-        }
-
-        // Add the farthest color to the ordered list
-        let next_color = colors.swap_remove(max_index);
-        ordered.push(next_color);
-
-        // Update running sums and count with the new color
-        sum_r += next_color.0 as f64;
-        sum_g += next_color.1 as f64;
-        sum_b += next_color.2 as f64;
-        count += 1.0;
-    }
-
-    assert!(ordered.len() == n);
-
-    ordered
-        .into_iter()
-        .map(|(r, g, b)| Color::Rgb(r, g, b))
-        .collect()
-}
-
-fn euclidean_distance(c1: (f64, f64, f64), c2: (f64, f64, f64)) -> f64 {
-    let (r1, g1, b1) = c1;
-    let (r2, g2, b2) = c2;
-    ((r2 - r1).powi(2) + (g2 - g1).powi(2) + (b2 - b1).powi(2)).sqrt()
+    &COLORS[..]
 }
 
 struct TransactionColorSet {
@@ -343,9 +345,9 @@ struct TransactionColorSet {
 
 impl TransactionColorSet {
     fn new() -> Self {
-        let color_set = generate_color_set(60);
-        let num_static_account_keys = color_set.len() - 17;
-        let non_account_colors = &color_set[num_static_account_keys..];
+        const NUM_NON_ACCOUNT_COLORS: usize = 17;
+        let color_set = generate_color_set();
+        let non_account_colors = &color_set[..NUM_NON_ACCOUNT_COLORS];
 
         Self {
             signature_count_color: non_account_colors[0],
@@ -365,18 +367,7 @@ impl TransactionColorSet {
             atl_read_count_color: non_account_colors[14],
             atl_write_set_color: non_account_colors[15],
             atl_read_set_color: non_account_colors[16],
-            static_account_key_colors: color_set[..num_static_account_keys].to_vec(),
+            static_account_key_colors: color_set[NUM_NON_ACCOUNT_COLORS..].to_vec(),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_generate_color_set() {
-        let color_set = generate_color_set(100);
-        assert_eq!(color_set.len(), 100);
     }
 }
