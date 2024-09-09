@@ -39,7 +39,7 @@ impl<'a> ByteSectionLegend<'a> {
         let mut unique_lines = self
             .sections
             .iter()
-            .filter(|section| section.bytes.len() > 0)
+            .filter(|section| !section.bytes.is_empty())
             .filter(|section| section.label.is_some())
             .map(|section: &TransactionByteSection| &section.label)
             .collect::<HashSet<_>>();
